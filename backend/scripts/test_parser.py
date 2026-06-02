@@ -1,12 +1,7 @@
 from ingestion.github_loader import clone_repository
 from ingestion.scanner import scan_python_files
-from parser.python_parser import (
-    parse_python_file,
-    extract_imports,
-    extract_functions,
-    extract_function_calls,
-)
-
+from parser.python_parser import extract_file_structure
+from pprint import pprint
 
 REPO_URL = "https://github.com/fastapi/fastapi.git"
 
@@ -22,21 +17,8 @@ first_file = python_files[0]
 
 print(f"\nParsing file: {first_file}")
 
+structure = extract_file_structure(first_file)
 
-tree = parse_python_file(first_file)
+print("\nExtracted Structure:\n")
 
-imports = extract_imports(tree)
-
-calls = extract_function_calls(tree)
-
-functions = extract_functions(tree)
-
-
-print("\nImports:")
-print(imports[:10])
-
-print("\nFunctions:")
-print(functions[:10])
-
-print("\nFunction Calls:")
-print(calls[:20])
+pprint(structure)
