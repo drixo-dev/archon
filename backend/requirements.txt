@@ -3,3 +3,5 @@ uvicorn[standard]
 pydantic
 python-dotenv
 GitPython
+neo4j
+pydantic-settings
