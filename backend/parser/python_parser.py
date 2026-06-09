@@ -17,20 +17,36 @@ def parse_python_file(file_path: Path):
 
 def extract_imports(tree):
     """
-    Extract import statements from AST.
+    Extract structured import information from AST.
     """
 
     imports = []
 
     for node in ast.walk(tree):
 
+        # import os
+        # import numpy as np
         if isinstance(node, ast.Import):
-            for alias in node.names:
-                imports.append(alias.name)
 
+            for alias in node.names:
+                imports.append({
+                    "module": alias.name,
+                    "type": "import",
+                    "alias": alias.asname
+                })
+
+        # from services.user_service import create_user
         elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                imports.append(node.module)
+
+            module_name = node.module
+
+            for alias in node.names:
+                imports.append({
+                    "module": module_name,
+                    "type": "from_import",
+                    "name": alias.name,
+                    "alias": alias.asname
+                })
 
     return imports
 
@@ -48,6 +64,7 @@ def extract_functions(tree):
             functions.append(node.name)
 
     return functions
+
 
 def extract_function_calls(tree):
     """
@@ -67,6 +84,7 @@ def extract_function_calls(tree):
                 calls.append(node.func.attr)
 
     return calls
+
 
 def extract_file_structure(file_path: Path):
     """

@@ -44,7 +44,6 @@ class GraphService:
             )
 
             return result.single()
-        
 
     def create_function(
         self,
@@ -77,5 +76,82 @@ class GraphService:
             )
 
             return result.single()
+
+    def create_import_node(
+        self,
+        module,
+        import_type,
+        alias=None,
+        imported_name=None
+    ):
+        query = """
+        MERGE (i:Import {
+            module: $module,
+            type: $type
+        })
+
+        SET i.alias = $alias
+        SET i.imported_name = $imported_name
+
+        RETURN i
+        """
+
+        with neo4j_connection.get_session() as session:
+            result = session.run(
+                query,
+                module=module,
+                type=import_type,
+                alias=alias,
+                imported_name=imported_name
+            )
+
+            return result.single()
+
+    def create_file_import_relationship(
+        self,
+        file_path,
+        module,
+        import_type,
+        alias=None,
+        imported_name=None
+    ):
+        query = """
+        MATCH (f:File {path: $file_path})
+
+        MATCH (i:Import {
+            module: $module,
+            type: $type
+        })
+
+        MERGE (f)-[:IMPORTS]->(i)
+        """
+
+        with neo4j_connection.get_session() as session:
+            session.run(
+                query,
+                file_path=file_path,
+                module=module,
+                type=import_type
+            )
+            
+    def create_dependency_relationship(
+    self,
+    source_file_path,
+    target_file_path
+    ):
+        query = """
+        MATCH (source:File {path: $source_file_path})
+        MATCH (target:File {path: $target_file_path})
+
+        MERGE (source)-[:DEPENDS_ON]->(target)
+        """
+
+        with neo4j_connection.get_session() as session:
+            session.run(
+                query,
+                source_file_path=source_file_path,
+                target_file_path=target_file_path
+            )
+
 
 graph_service = GraphService()
