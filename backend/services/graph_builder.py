@@ -4,7 +4,6 @@ from parser.python_parser import extract_file_structure
 from services.graph_service import graph_service
 from services.import_resolver import import_resolver
 
-
 class GraphBuilder:
 
     def ingest_file(
@@ -12,7 +11,8 @@ class GraphBuilder:
         repository_name: str,
         repository_path: Path,
         file_path: Path,
-        module_index: dict = None
+        module_index: dict = None,
+        function_index: dict = None
     ):
 
         structure = extract_file_structure(file_path)
@@ -65,8 +65,6 @@ class GraphBuilder:
                     module_index=module_index
                 )
 
-                # Only create dependency relationship
-                # for internal repository imports
                 if resolved_path:
 
                     graph_service.create_dependency_relationship(
@@ -74,5 +72,29 @@ class GraphBuilder:
                         target_file_path=resolved_path
                     )
 
+        # Create CALLS Relationships
+        if function_index:
+
+            for call_data in structure["calls"]:
+
+                caller_qualified_name = (
+                    f"{relative_path}:{call_data['caller']}"
+                )
+
+                callee_qualified_name = (
+                    import_resolver.resolve_function(
+                        function_name=call_data["callee"],
+                        function_index=function_index
+                    )
+                )
+
+                # Only create relationship if callee
+                # resolves to repository function
+                if callee_qualified_name:
+
+                    graph_service.create_function_call_relationship(
+                        caller_qualified_name=caller_qualified_name,
+                        callee_qualified_name=callee_qualified_name
+                    )
 
 graph_builder = GraphBuilder()

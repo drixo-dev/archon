@@ -25,10 +25,6 @@ class ImportResolver:
                 repository_path
             )
 
-            # Convert:
-            # app/services/user_service.py
-            # ->
-            # app.services.user_service
             module_name = str(relative_path)
 
             module_name = module_name.replace("/", ".")
@@ -37,11 +33,11 @@ class ImportResolver:
             module_index[module_name] = str(relative_path)
 
         return module_index
-    
+
     def resolve_import(
-    self,
-    module_name: str,
-    module_index: dict
+        self,
+        module_name: str,
+        module_index: dict
     ):
         """
         Resolve import module name to repository file.
@@ -54,5 +50,60 @@ class ImportResolver:
         """
 
         return module_index.get(module_name)
+
+    def build_function_index(
+        self,
+        repository_path: Path,
+        python_files: list[Path]
+    ):
+        """
+        Build function lookup index.
+
+        Example:
+
+        validate_user
+            ->
+        auth/utils.py:validate_user
+        """
+
+        from parser.python_parser import (
+            extract_file_structure
+        )
+
+        function_index = {}
+
+        for file_path in python_files:
+
+            relative_path = str(
+                file_path.relative_to(repository_path)
+            )
+
+            structure = extract_file_structure(
+                file_path
+            )
+
+            for function_name in structure["functions"]:
+
+                qualified_name = (
+                    f"{relative_path}:{function_name}"
+                )
+
+                function_index[
+                    function_name
+                ] = qualified_name
+
+        return function_index
+
+    def resolve_function(
+        self,
+        function_name: str,
+        function_index: dict
+    ):
+        """
+        Resolve function name to
+        qualified function identifier.
+        """
+
+        return function_index.get(function_name)
 
 import_resolver = ImportResolver()

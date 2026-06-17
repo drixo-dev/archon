@@ -68,20 +68,35 @@ def extract_functions(tree):
 
 def extract_function_calls(tree):
     """
-    Extract function calls from AST.
+    Extract caller -> callee relationships.
     """
 
     calls = []
 
     for node in ast.walk(tree):
 
-        if isinstance(node, ast.Call):
+        if isinstance(node, ast.FunctionDef):
 
-            if isinstance(node.func, ast.Name):
-                calls.append(node.func.id)
+            caller = node.name
 
-            elif isinstance(node.func, ast.Attribute):
-                calls.append(node.func.attr)
+            for child in ast.walk(node):
+
+                if isinstance(child, ast.Call):
+
+                    callee = None
+
+                    if isinstance(child.func, ast.Name):
+                        callee = child.func.id
+
+                    elif isinstance(child.func, ast.Attribute):
+                        callee = child.func.attr
+
+                    if callee:
+
+                        calls.append({
+                            "caller": caller,
+                            "callee": callee
+                        })
 
     return calls
 

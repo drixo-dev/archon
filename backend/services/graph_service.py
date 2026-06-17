@@ -133,11 +133,11 @@ class GraphService:
                 module=module,
                 type=import_type
             )
-            
+
     def create_dependency_relationship(
-    self,
-    source_file_path,
-    target_file_path
+        self,
+        source_file_path,
+        target_file_path
     ):
         query = """
         MATCH (source:File {path: $source_file_path})
@@ -153,5 +153,28 @@ class GraphService:
                 target_file_path=target_file_path
             )
 
+    def create_function_call_relationship(
+        self,
+        caller_qualified_name,
+        callee_qualified_name
+    ):
+        query = """
+        MATCH (caller:Function {
+            qualified_name: $caller_qualified_name
+        })
+
+        MATCH (callee:Function {
+            qualified_name: $callee_qualified_name
+        })
+
+        MERGE (caller)-[:CALLS]->(callee)
+        """
+
+        with neo4j_connection.get_session() as session:
+            session.run(
+                query,
+                caller_qualified_name=caller_qualified_name,
+                callee_qualified_name=callee_qualified_name
+            )
 
 graph_service = GraphService()

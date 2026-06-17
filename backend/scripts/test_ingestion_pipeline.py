@@ -5,9 +5,7 @@ from ingestion.github_loader import clone_repository
 from ingestion.scanner import scan_python_files
 from services.graph_builder import graph_builder
 
-
 REPO_URL = "https://github.com/fastapi/typer.git"
-
 
 def test_ingestion_pipeline():
 
@@ -25,6 +23,12 @@ def test_ingestion_pipeline():
         python_files=python_files
     )
 
+    # Build repository function index
+    function_index = import_resolver.build_function_index(
+        repository_path=repo_path,
+        python_files=python_files
+    )
+
     print(f"\nRepository: {repository_name}")
     print(f"Python files discovered: {len(python_files)}")
 
@@ -37,7 +41,8 @@ def test_ingestion_pipeline():
             repository_name=repository_name,
             repository_path=repo_path,
             file_path=file_path,
-            module_index=module_index
+            module_index=module_index,
+            function_index=function_index
         )
 
     neo4j_connection.close()
