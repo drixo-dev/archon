@@ -48,7 +48,8 @@ class GraphService:
     def create_function(
         self,
         file_path: str,
-        function_name: str
+        function_name: str,
+        source_code: str = None
     ):
         qualified_name = f"{file_path}:{function_name}"
 
@@ -61,6 +62,7 @@ class GraphService:
 
         SET func.name = $function_name
         SET func.file_path = $file_path
+        SET func.source_code = $source_code
 
         MERGE (f)-[:DEFINES]->(func)
 
@@ -72,7 +74,8 @@ class GraphService:
                 query,
                 file_path=file_path,
                 function_name=function_name,
-                qualified_name=qualified_name
+                qualified_name=qualified_name,
+                source_code=source_code
             )
 
             return result.single()
@@ -176,5 +179,47 @@ class GraphService:
                 caller_qualified_name=caller_qualified_name,
                 callee_qualified_name=callee_qualified_name
             )
+    
+    def get_all_functions(
+        self,
+        exclude_tests: bool = True
+    ):
+        query = """
+        MATCH (f:Function)
+        WHERE f.source_code IS NOT NULL
+        RETURN
+            f.qualified_name AS qualified_name,
+            f.file_path AS file_path,
+            f.source_code AS source_code
+        """
+
+        with neo4j_connection.get_session() as session:
+
+            results = session.run(query)
+
+            functions = []
+
+            for record in results:
+
+                if (
+                    exclude_tests
+                    and record["file_path"].startswith(
+                        "tests/"
+                    )
+                ):
+                    continue
+
+                functions.append(
+                    {
+                        "qualified_name":
+                            record["qualified_name"],
+                        "file_path":
+                            record["file_path"],
+                        "source_code":
+                            record["source_code"]
+                    }
+                )
+
+            return functions
 
 graph_service = GraphService()

@@ -82,7 +82,9 @@ class ImportResolver:
                 file_path
             )
 
-            for function_name in structure["functions"]:
+            for function_data in structure["functions"]:
+
+                function_name = function_data["name"]
 
                 qualified_name = (
                     f"{relative_path}:{function_name}"

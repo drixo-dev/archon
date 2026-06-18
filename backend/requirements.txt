@@ -1,7 +1,14 @@
 fastapi
 uvicorn[standard]
+
 pydantic
+pydantic-settings
 python-dotenv
+
 GitPython
 neo4j
-pydantic-settings
+
+sentence-transformers
+torch
+
+psycopg2-binary

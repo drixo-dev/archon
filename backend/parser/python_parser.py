@@ -3,16 +3,18 @@ from pathlib import Path
 
 
 def parse_python_file(file_path: Path):
-    """
-    Parse Python file into AST.
-    """
 
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(
+        file_path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
         source_code = file.read()
 
     tree = ast.parse(source_code)
 
-    return tree
+    return tree, source_code
 
 
 def extract_imports(tree):
@@ -51,9 +53,9 @@ def extract_imports(tree):
     return imports
 
 
-def extract_functions(tree):
+def extract_functions(tree, source_code):
     """
-    Extract function definitions.
+    Extract functions with source code.
     """
 
     functions = []
@@ -61,7 +63,16 @@ def extract_functions(tree):
     for node in ast.walk(tree):
 
         if isinstance(node, ast.FunctionDef):
-            functions.append(node.name)
+
+            function_source = ast.get_source_segment(
+                source_code,
+                node
+            )
+
+            functions.append({
+                "name": node.name,
+                "source": function_source
+            })
 
     return functions
 
@@ -106,11 +117,13 @@ def extract_file_structure(file_path: Path):
     Extract complete semantic structure from Python file.
     """
 
-    tree = parse_python_file(file_path)
+    tree, source_code = parse_python_file(
+    file_path
+    )
 
     return {
         "file": str(file_path),
         "imports": extract_imports(tree),
-        "functions": extract_functions(tree),
+        "functions": extract_functions(tree,source_code),
         "calls": extract_function_calls(tree),
     }

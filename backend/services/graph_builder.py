@@ -28,11 +28,12 @@ class GraphBuilder:
         )
 
         # Create Function Nodes
-        for function_name in structure["functions"]:
+        for function_data in structure["functions"]:
 
             graph_service.create_function(
                 file_path=relative_path,
-                function_name=function_name
+                function_name=function_data["name"],
+                source_code=function_data["source"]
             )
 
         # Create Import Nodes + Relationships
