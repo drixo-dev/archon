@@ -221,5 +221,176 @@ class GraphService:
                 )
 
             return functions
+        
+        
+    def get_function_neighbors(
+        self,
+        qualified_name: str
+    ):
+
+        query = """
+        MATCH (f:Function {
+            qualified_name: $qualified_name
+        })
+
+        OPTIONAL MATCH
+            (f)-[:CALLS]->(callee:Function)
+
+        OPTIONAL MATCH
+            (caller:Function)-[:CALLS]->(f)
+
+        RETURN
+            f.qualified_name AS function_name,
+
+            collect(
+                DISTINCT callee.qualified_name
+            ) AS callees,
+
+            collect(
+                DISTINCT caller.qualified_name
+            ) AS callers
+        """
+
+        with neo4j_connection.get_session() as session:
+
+            result = session.run(
+                query,
+                qualified_name=qualified_name
+            )
+
+            record = result.single()
+
+            if not record:
+                return None
+
+            return {
+                "function":
+                    record["function_name"],
+
+                "callees":
+                    [
+                        c for c in record["callees"]
+                        if c
+                    ],
+
+                "callers":
+                    [
+                        c for c in record["callers"]
+                        if c
+                    ]
+            }
+
+    def get_functions_by_file(
+        self,
+        file_path: str,
+        limit: int = 10
+    ):
+        query = """
+        MATCH (file:File {path: $file_path})
+            -[:DEFINES]->(function:Function)
+        WHERE function.source_code IS NOT NULL
+
+        RETURN
+            function.qualified_name AS qualified_name,
+            function.file_path AS file_path,
+            function.source_code AS source_code
+        LIMIT $limit
+        """
+
+        with neo4j_connection.get_session() as session:
+
+            results = session.run(
+                query,
+                file_path=file_path,
+                limit=limit
+            )
+
+            return [
+                {
+                    "qualified_name":
+                        record["qualified_name"],
+                    "file_path":
+                        record["file_path"],
+                    "source_code":
+                        record["source_code"]
+                }
+                for record in results
+            ]
+
+    def get_functions_by_qualified_names(
+        self,
+        qualified_names: list[str]
+    ):
+        if not qualified_names:
+            return []
+
+        query = """
+        MATCH (function:Function)
+        WHERE
+            function.qualified_name IN $qualified_names
+            AND function.source_code IS NOT NULL
+
+        RETURN
+            function.qualified_name AS qualified_name,
+            function.file_path AS file_path,
+            function.source_code AS source_code
+        """
+
+        with neo4j_connection.get_session() as session:
+
+            results = session.run(
+                query,
+                qualified_names=qualified_names
+            )
+
+            return [
+                {
+                    "qualified_name":
+                        record["qualified_name"],
+                    "file_path":
+                        record["file_path"],
+                    "source_code":
+                        record["source_code"]
+                }
+                for record in results
+            ]
+
+    def get_dependency_functions(
+        self,
+        file_path: str,
+        limit: int = 10
+    ):
+        query = """
+        MATCH (source:File {path: $file_path})
+            -[:DEPENDS_ON]->(target:File)
+            -[:DEFINES]->(function:Function)
+        WHERE function.source_code IS NOT NULL
+
+        RETURN
+            function.qualified_name AS qualified_name,
+            function.file_path AS file_path,
+            function.source_code AS source_code
+        LIMIT $limit
+        """
+
+        with neo4j_connection.get_session() as session:
+
+            results = session.run(
+                query,
+                file_path=file_path,
+                limit=limit
+            )
+
+            return [
+                {
+                    "qualified_name":
+                        record["qualified_name"],
+                    "file_path":
+                        record["file_path"],
+                    "source_code":
+                        record["source_code"]
+                }
+                for record in results
+            ]
 
 graph_service = GraphService()
