@@ -9,6 +9,16 @@ class PromptBuilder:
         context_text = self._format_repository_context(
             repository_context
         )
+        wants_detailed_answer = self._wants_detailed_answer(question)
+        answer_style = (
+            "Provide a concise answer (about 5-10 bullet points or a short paragraph). "
+            "Keep it focused on the most relevant implementation path only."
+        )
+        if wants_detailed_answer:
+            answer_style = (
+                "Provide a detailed technical answer with step-by-step explanation and "
+                "important implementation details."
+            )
 
         return f"""
 You are an AI software architect.
@@ -20,6 +30,11 @@ context is insufficient and explain what is missing.
 
 Do not invent files, functions, or behavior that are not present in the
 repository context.
+
+{answer_style}
+
+Do not explain every retrieved function by default. Mention only functions
+that directly answer the question.
 
 Repository:
 
@@ -109,8 +124,8 @@ Source:
     def _truncate_source(
         self,
         source_code: str | None,
-        max_lines: int = 30,
-        max_characters: int = 1000
+        max_lines: int = 20,
+        max_characters: int = 700
     ) -> str:
         if not source_code:
             return ""
@@ -133,6 +148,18 @@ Source:
             return f"{truncated_source}\n..."
 
         return truncated_source
+
+    def _wants_detailed_answer(self, question: str) -> bool:
+        lowered = question.lower()
+        detail_markers = [
+            "in detail",
+            "deep dive",
+            "step by step",
+            "thoroughly",
+            "explain in depth",
+            "detailed",
+        ]
+        return any(marker in lowered for marker in detail_markers)
 
 
 prompt_builder = PromptBuilder()

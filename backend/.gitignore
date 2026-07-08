@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+
+# Local datasets and generated artifacts
+datasets/
+
+# Virtual environments
+.venv/
+venv/

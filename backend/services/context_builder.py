@@ -15,8 +15,10 @@ class ContextBuilder:
         self,
         question: str,
         retrieval_limit: int = 3,
-        same_file_limit: int = 8,
-        dependency_limit: int = 8,
+        same_file_limit: int = 3,
+        dependency_limit: int = 3,
+        call_neighbor_limit: int = 4,
+        max_total_functions: int = 12,
         repository_id: str | None = None
     ):
         query_embedding = (
@@ -42,15 +44,19 @@ class ContextBuilder:
             question=question,
             retrieved_functions=retrieved_functions,
             same_file_limit=same_file_limit,
-            dependency_limit=dependency_limit
+            dependency_limit=dependency_limit,
+            call_neighbor_limit=call_neighbor_limit,
+            max_total_functions=max_total_functions,
         )
 
     def expand_context(
         self,
         question: str,
         retrieved_functions: list[dict],
-        same_file_limit: int = 8,
-        dependency_limit: int = 8
+        same_file_limit: int = 3,
+        dependency_limit: int = 3,
+        call_neighbor_limit: int = 4,
+        max_total_functions: int = 12,
     ):
         seen = set()
 
@@ -93,7 +99,7 @@ class ContextBuilder:
                 neighbor_names = (
                     neighbors["callers"]
                     + neighbors["callees"]
-                )
+                )[:call_neighbor_limit]
 
                 neighbor_functions = (
                     graph_service
@@ -125,6 +131,11 @@ class ContextBuilder:
                     seen=seen
                 )
 
+        self._trim_context(
+            context=context,
+            max_total_functions=max_total_functions
+        )
+
         return context
 
     def _function_from_search_result(
@@ -150,6 +161,28 @@ class ContextBuilder:
 
         seen.add(qualified_name)
         items.append(function)
+
+    def _trim_context(
+        self,
+        context: dict,
+        max_total_functions: int
+    ):
+        section_order = [
+            "retrieved_functions",
+            "same_file_functions",
+            "call_neighbor_functions",
+            "dependency_functions",
+        ]
+
+        remaining = max_total_functions
+        for section in section_order:
+            functions = context[section]
+            if remaining <= 0:
+                context[section] = []
+                continue
+            if len(functions) > remaining:
+                context[section] = functions[:remaining]
+            remaining -= len(context[section])
 
 
 context_builder = ContextBuilder()
