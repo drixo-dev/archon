@@ -7,6 +7,9 @@ class Neo4jConnection:
         self.driver = None
 
     def connect(self):
+        if self.driver:
+            return self.driver
+
         self.driver = GraphDatabase.driver(
             settings.NEO4J_URI,
             auth=(
@@ -14,10 +17,18 @@ class Neo4jConnection:
                 settings.NEO4J_PASSWORD
             )
         )
+        return self.driver
 
     def close(self):
-        if self.driver:
+        if not self.driver:
+            return
+
+        try:
             self.driver.close()
+        except Exception:
+            pass
+        finally:
+            self.driver = None
 
     def get_session(self):
         if not self.driver:

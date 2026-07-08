@@ -29,6 +29,7 @@ class GraphService:
 
         MERGE (f:File {path: $file_path})
         SET f.language = $language
+        SET f.repository_name = $repository_name
 
         MERGE (r)-[:CONTAINS]->(f)
 
@@ -49,7 +50,8 @@ class GraphService:
         self,
         file_path: str,
         function_name: str,
-        source_code: str = None
+        source_code: str = None,
+        repository_name: str | None = None
     ):
         qualified_name = f"{file_path}:{function_name}"
 
@@ -63,6 +65,7 @@ class GraphService:
         SET func.name = $function_name
         SET func.file_path = $file_path
         SET func.source_code = $source_code
+        SET func.repository_name = $repository_name
 
         MERGE (f)-[:DEFINES]->(func)
 
@@ -75,7 +78,8 @@ class GraphService:
                 file_path=file_path,
                 function_name=function_name,
                 qualified_name=qualified_name,
-                source_code=source_code
+                source_code=source_code,
+                repository_name=repository_name
             )
 
             return result.single()
@@ -182,7 +186,8 @@ class GraphService:
     
     def get_all_functions(
         self,
-        exclude_tests: bool = True
+        exclude_tests: bool = True,
+        repository_name: str | None = None
     ):
         query = """
         MATCH (f:Function)
@@ -190,7 +195,8 @@ class GraphService:
         RETURN
             f.qualified_name AS qualified_name,
             f.file_path AS file_path,
-            f.source_code AS source_code
+            f.source_code AS source_code,
+            f.repository_name AS repository_name
         """
 
         with neo4j_connection.get_session() as session:
@@ -207,6 +213,9 @@ class GraphService:
                         "tests/"
                     )
                 ):
+                    continue
+
+                if repository_name and record.get("repository_name") != repository_name:
                     continue
 
                 functions.append(

@@ -33,7 +33,8 @@ class GraphBuilder:
             graph_service.create_function(
                 file_path=relative_path,
                 function_name=function_data["name"],
-                source_code=function_data["source"]
+                source_code=function_data["source"],
+                repository_name=repository_name
             )
 
         # Create Import Nodes + Relationships

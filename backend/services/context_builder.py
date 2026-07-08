@@ -16,7 +16,8 @@ class ContextBuilder:
         question: str,
         retrieval_limit: int = 3,
         same_file_limit: int = 8,
-        dependency_limit: int = 8
+        dependency_limit: int = 8,
+        repository_id: str | None = None
     ):
         query_embedding = (
             embedding_service.generate_embedding(
@@ -27,7 +28,8 @@ class ContextBuilder:
         matches = (
             embedding_repository.search_similar(
                 query_embedding=query_embedding,
-                limit=retrieval_limit
+                limit=retrieval_limit,
+                repository_id=repository_id
             )
         )
 
