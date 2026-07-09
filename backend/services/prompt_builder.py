@@ -7,9 +7,10 @@ class PromptBuilder:
         repository_name: str = "Unknown Repository",
         response_mode: str = "concise"
     ) -> str:
-        context_text = self._format_repository_context(
-            repository_context
-        )
+        context_text = self._format_repository_context(repository_context)
+        
+        metadata = repository_context.get("metadata", {})
+        metadata_text = f"Files: {metadata.get('files', 0)}\nFunctions: {metadata.get('functions', 0)}\nGraph Expansion: {metadata.get('graph_expansion', '0 hops')}"
 
         return f"""
 You are Archon, a premium AI Repository Intelligence Platform.
@@ -19,35 +20,40 @@ Act as a world-class principal engineer helping developers understand unfamiliar
 
 Rules:
 - Never invent implementation details. Do not hallucinate.
-- Use only evidence from the repository context.
+- Use only evidence from the repository context. If context is insufficient, explicitly state what additional files or modules would help instead of hallucinating.
 - Maintain consistent terminology.
 - Provide beginner-friendly explanations.
-- Always include a TL;DR first.
-- Use numbered explanations for step-by-step logic.
-- Include ASCII architecture diagrams and flow diagrams where appropriate.
-- Highlight important files and important functions.
-- Explain core concepts used in the code.
-- Provide a summary and a "Learn Next" section.
+- Avoid repeating the execution flow across multiple sections. Architecture should be high-level components. Execution Flow is a single, concise path. Code Walkthrough tracks the actual function calls.
 - Use concise bullet points instead of long paragraphs.
-- Mention missing context when necessary.
+- For Relevant Files, explicitly explain what each file does based on context (e.g., "router.py - Entry point for the API"). Do not just list the files.
+- The Code Walkthrough must trace the execution path function-by-function (e.g., `1. initialize() -> 2. process_data()`), noting the Purpose of each step. Do not restate the architecture here.
+- The Learn Next section must provide a sequential reading path of the retrieved files to guide a developer through reading the implementation (e.g., `api.py -> service.py -> models.py`).
+- At the end, provide a Confidence rating (High / Medium / Low) with a specific Reason based on the context provided. Never hallucinate confidence.
+- Finally, include a Context Used section with the exact provided retrieval metadata.
 
 Response format:
 
 # TL;DR
 
-# High-Level Flow
+# Architecture
 
-# Step-by-Step
+# Execution Flow
 
-# Important Files
+# Relevant Files
 
-# Important Functions
+# Relevant Functions
 
-# Concepts Used
+# Code Walkthrough
 
-# Summary
+# Design Decisions
+
+# Related Components
 
 # Learn Next
+
+# Confidence
+
+# Context Used
 
 Repository: {repository_name}
 
@@ -55,76 +61,42 @@ Question: {question}
 
 Response Mode: {response_mode}
 
+Retrieval Metadata:
+{metadata_text}
+
 Repository Context:
 {context_text}
 
 Answer:
 """.strip()
 
-    def _format_repository_context(
-        self,
-        repository_context: dict
-    ) -> str:
-        sections = [
-            self._format_function_section(
-                title="Retrieved Functions",
-                functions=repository_context.get(
-                    "retrieved_functions",
-                    []
-                )
-            ),
-            self._format_function_section(
-                title="Same File Functions",
-                functions=repository_context.get(
-                    "same_file_functions",
-                    []
-                )
-            ),
-            self._format_function_section(
-                title="Call Neighbor Functions",
-                functions=repository_context.get(
-                    "call_neighbor_functions",
-                    []
-                )
-            ),
-            self._format_function_section(
-                title="Dependency Functions",
-                functions=repository_context.get(
-                    "dependency_functions",
-                    []
-                )
-            )
-        ]
+    def _format_repository_context(self, repository_context: dict) -> str:
+        feature_files = repository_context.get("feature_files", [])
+        if not feature_files:
+            return "No context found."
+            
+        sections = []
+        for f in feature_files:
+            file_path = f.get("file_path", "")
+            score = f.get("score", 0)
+            dependencies = ", ".join(f.get("dependencies", []))
+            
+            section = f"File: {file_path} (Relevance Score: {score})\n"
+            if dependencies:
+                section += f"Dependencies: {dependencies}\n"
+                
+            funcs = []
+            for func in f.get("functions", []):
+                funcs.append(self._format_function(func))
+                
+            section += "\n" + "\n\n".join(funcs)
+            sections.append(section)
+            
+        return "\n\n---\n\n".join(sections)
 
-        return "\n\n".join(sections)
-
-    def _format_function_section(
-        self,
-        title: str,
-        functions: list[dict]
-    ) -> str:
-        if not functions:
-            return f"{title}:\nNo functions found."
-
-        formatted_functions = []
-
-        for function in functions:
-            formatted_functions.append(
-                self._format_function(function)
-            )
-
-        return (
-            f"{title}:\n"
-            + "\n\n".join(formatted_functions)
-        )
-
-    def _format_function(
-        self,
-        function: dict
-    ) -> str:
+    def _format_function(self, function: dict) -> str:
         return f"""
 Function: {function.get("qualified_name")}
-File: {function.get("file_path")}
 Source:
 ```python
 {self._truncate_source(function.get("source_code"))}
@@ -134,8 +106,8 @@ Source:
     def _truncate_source(
         self,
         source_code: str | None,
-        max_lines: int = 20,
-        max_characters: int = 700
+        max_lines: int = 30,
+        max_characters: int = 1500
     ) -> str:
         if not source_code:
             return ""
@@ -145,21 +117,14 @@ Source:
         truncated_source = "\n".join(truncated_lines)
 
         if len(truncated_source) > max_characters:
-            truncated_source = (
-                truncated_source[:max_characters]
-            )
+            truncated_source = truncated_source[:max_characters]
 
-        was_truncated = (
-            len(lines) > max_lines
-            or len(source_code) > len(truncated_source)
-        )
+        was_truncated = len(lines) > max_lines or len(source_code) > len(truncated_source)
 
         if was_truncated:
             return f"{truncated_source}\n..."
 
         return truncated_source
-
-
 
     def build_repository_overview_prompt(
         self,

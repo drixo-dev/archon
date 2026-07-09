@@ -52,9 +52,9 @@ def get_repository_statistics(repository_id: str):
     return stats
 
 
-@router.get("/repositories/{repository_id}/folders")
-def get_repository_folders(repository_id: str):
-    folders = folder_service.get_folder_overview(repository_id)
-    if not folders:
+@router.get("/repositories/{repository_id}/guide")
+def get_repository_guide(repository_id: str):
+    guide = folder_service.get_repository_guide(repository_id)
+    if not guide:
         raise HTTPException(status_code=404, detail="Repository not found")
-    return folders
+    return guide

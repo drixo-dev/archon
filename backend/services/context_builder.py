@@ -1,38 +1,25 @@
-from repositories.embedding_repository import (
-    embedding_repository
-)
-from services.embedding_service import (
-    embedding_service
-)
-from services.graph_service import (
-    graph_service
-)
-
+from repositories.embedding_repository import embedding_repository
+from services.embedding_service import embedding_service
+from services.graph_service import graph_service
 
 class ContextBuilder:
 
     def build_context(
         self,
         question: str,
-        retrieval_limit: int = 3,
+        retrieval_limit: int = 30,
         same_file_limit: int = 3,
         dependency_limit: int = 3,
         call_neighbor_limit: int = 4,
         max_total_functions: int = 12,
         repository_id: str | None = None
     ):
-        query_embedding = (
-            embedding_service.generate_embedding(
-                question
-            )
-        )
+        query_embedding = embedding_service.generate_embedding(question)
 
-        matches = (
-            embedding_repository.search_similar(
-                query_embedding=query_embedding,
-                limit=retrieval_limit,
-                repository_id=repository_id
-            )
+        matches = embedding_repository.search_similar(
+            query_embedding=query_embedding,
+            limit=retrieval_limit,
+            repository_id=repository_id
         )
 
         retrieved_functions = [
@@ -43,146 +30,90 @@ class ContextBuilder:
         return self.expand_context(
             question=question,
             retrieved_functions=retrieved_functions,
-            same_file_limit=same_file_limit,
-            dependency_limit=dependency_limit,
-            call_neighbor_limit=call_neighbor_limit,
-            max_total_functions=max_total_functions,
+            repository_id=repository_id,
+            same_file_limit=same_file_limit
         )
 
     def expand_context(
         self,
         question: str,
         retrieved_functions: list[dict],
-        same_file_limit: int = 3,
-        dependency_limit: int = 3,
-        call_neighbor_limit: int = 4,
-        max_total_functions: int = 12,
+        repository_id: str | None = None,
+        same_file_limit: int = 3
     ):
-        seen = set()
+        # 1. Group by source file
+        candidate_files = {}
+        for func in retrieved_functions:
+            fp = func["file_path"]
+            if fp not in candidate_files:
+                candidate_files[fp] = []
+            candidate_files[fp].append(func)
 
-        context = {
+        # 2. Score each file
+        all_stats = graph_service.get_file_statistics_for_folders(repository_id) if repository_id else []
+        stats_by_file = {s["path"]: s for s in all_stats}
+
+        scored_files = []
+        for fp, funcs in candidate_files.items():
+            semantic_score = len(funcs) * 10
+            stats = stats_by_file.get(fp, {"incoming_deps": 0, "outgoing_deps": []})
+            
+            proximity_score = 0
+            for dep in stats.get("outgoing_deps", []):
+                if dep in candidate_files:
+                    proximity_score += 5
+                    
+            call_frequency = stats.get("incoming_deps", 0) * 2
+            
+            total_score = semantic_score + proximity_score + call_frequency
+            scored_files.append({
+                "file_path": fp,
+                "score": total_score,
+                "functions": funcs,
+                "dependencies": stats.get("outgoing_deps", []),
+                "incoming_deps": stats.get("incoming_deps", 0)
+            })
+
+        # Sort and take top 5
+        scored_files.sort(key=lambda x: x["score"], reverse=True)
+        top_files = scored_files[:5]
+
+        # 3. Expand to related files/functions using Neo4j
+        feature_files = []
+        for f in top_files:
+            file_funcs = graph_service.get_functions_by_file(f["file_path"], limit=max(5, same_file_limit))
+            seen = {fn["qualified_name"] for fn in f["functions"]}
+            merged_funcs = list(f["functions"])
+            for fn in file_funcs:
+                if fn["qualified_name"] not in seen:
+                    merged_funcs.append(fn)
+                    seen.add(fn["qualified_name"])
+
+            feature_files.append({
+                "file_path": f["file_path"],
+                "score": f["score"],
+                "functions": merged_funcs,
+                "dependencies": f["dependencies"]
+            })
+
+        total_files = len(feature_files)
+        total_functions = sum(len(f["functions"]) for f in feature_files)
+
+        return {
             "question": question,
-            "retrieved_functions": [],
-            "same_file_functions": [],
-            "call_neighbor_functions": [],
-            "dependency_functions": []
+            "feature_files": feature_files,
+            "metadata": {
+                "files": total_files,
+                "functions": total_functions,
+                "graph_expansion": "1 hops"
+            }
         }
 
-        for function in retrieved_functions:
-            self._append_unique(
-                items=context["retrieved_functions"],
-                function=function,
-                seen=seen
-            )
-
-            same_file_functions = (
-                graph_service.get_functions_by_file(
-                    file_path=function["file_path"],
-                    limit=same_file_limit
-                )
-            )
-
-            for same_file_function in same_file_functions:
-                self._append_unique(
-                    items=context["same_file_functions"],
-                    function=same_file_function,
-                    seen=seen
-                )
-
-            neighbors = (
-                graph_service.get_function_neighbors(
-                    function["qualified_name"]
-                )
-            )
-
-            if neighbors:
-                neighbor_names = (
-                    neighbors["callers"]
-                    + neighbors["callees"]
-                )[:call_neighbor_limit]
-
-                neighbor_functions = (
-                    graph_service
-                    .get_functions_by_qualified_names(
-                        neighbor_names
-                    )
-                )
-
-                for neighbor_function in neighbor_functions:
-                    self._append_unique(
-                        items=context[
-                            "call_neighbor_functions"
-                        ],
-                        function=neighbor_function,
-                        seen=seen
-                    )
-
-            dependency_functions = (
-                graph_service.get_dependency_functions(
-                    file_path=function["file_path"],
-                    limit=dependency_limit
-                )
-            )
-
-            for dependency_function in dependency_functions:
-                self._append_unique(
-                    items=context["dependency_functions"],
-                    function=dependency_function,
-                    seen=seen
-                )
-
-        self._trim_context(
-            context=context,
-            max_total_functions=max_total_functions
-        )
-
-        return context
-
-    def _function_from_search_result(
-        self,
-        result
-    ):
+    def _function_from_search_result(self, result):
         return {
             "qualified_name": result[0],
             "file_path": result[1],
             "source_code": result[2]
         }
-
-    def _append_unique(
-        self,
-        items: list,
-        function: dict,
-        seen: set
-    ):
-        qualified_name = function["qualified_name"]
-
-        if qualified_name in seen:
-            return
-
-        seen.add(qualified_name)
-        items.append(function)
-
-    def _trim_context(
-        self,
-        context: dict,
-        max_total_functions: int
-    ):
-        section_order = [
-            "retrieved_functions",
-            "same_file_functions",
-            "call_neighbor_functions",
-            "dependency_functions",
-        ]
-
-        remaining = max_total_functions
-        for section in section_order:
-            functions = context[section]
-            if remaining <= 0:
-                context[section] = []
-                continue
-            if len(functions) > remaining:
-                context[section] = functions[:remaining]
-            remaining -= len(context[section])
-
 
 context_builder = ContextBuilder()
