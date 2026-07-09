@@ -162,6 +162,7 @@ class RepositoryService:
                 progress=100,
                 embeddings_generated=generated_embeddings,
                 error=None,
+                last_indexed_at=datetime.now(timezone.utc).isoformat(),
             )
         except Exception as exc:
             self._update_repository(

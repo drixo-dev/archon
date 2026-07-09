@@ -6,8 +6,10 @@ from models.repository import (
     RepositoryListResponse,
     RepositoryResponse,
 )
+from services.folder_service import folder_service
 from services.overview_service import overview_service
 from services.repository_service import repository_service
+from services.statistics_service import statistics_service
 
 router = APIRouter()
 
@@ -41,3 +43,18 @@ def get_repository_overview(repository_id: str):
         raise HTTPException(status_code=500, detail=overview["error"])
     return overview
 
+
+@router.get("/repositories/{repository_id}/statistics")
+def get_repository_statistics(repository_id: str):
+    stats = statistics_service.get_repository_statistics(repository_id)
+    if not stats:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    return stats
+
+
+@router.get("/repositories/{repository_id}/folders")
+def get_repository_folders(repository_id: str):
+    folders = folder_service.get_folder_overview(repository_id)
+    if not folders:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    return folders

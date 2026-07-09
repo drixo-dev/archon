@@ -402,4 +402,36 @@ class GraphService:
                 for record in results
             ]
 
+    def get_file_statistics_for_folders(
+        self,
+        repository_name: str
+    ):
+        query = """
+        MATCH (f:File {repository_name: $repository_name})
+        OPTIONAL MATCH (f)-[:DEFINES]->(func:Function)
+        OPTIONAL MATCH (caller:File)-[:DEPENDS_ON]->(f)
+        OPTIONAL MATCH (f)-[:DEPENDS_ON]->(callee:File)
+        RETURN
+            f.path AS path,
+            count(DISTINCT func) AS function_count,
+            count(DISTINCT caller) AS incoming_deps,
+            collect(DISTINCT callee.path) AS outgoing_deps
+        """
+
+        with neo4j_connection.get_session() as session:
+            results = session.run(
+                query,
+                repository_name=repository_name
+            )
+
+            return [
+                {
+                    "path": record["path"],
+                    "function_count": record["function_count"],
+                    "incoming_deps": record["incoming_deps"],
+                    "outgoing_deps": record["outgoing_deps"]
+                }
+                for record in results
+            ]
+
 graph_service = GraphService()

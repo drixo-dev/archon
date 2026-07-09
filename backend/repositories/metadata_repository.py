@@ -19,10 +19,15 @@ class MetadataRepository:
                 files_scanned INTEGER,
                 functions_indexed INTEGER,
                 embeddings_generated INTEGER,
-                error TEXT
+                error TEXT,
+                last_indexed_at TEXT
             )
             """
         )
+        try:
+            cursor.execute("ALTER TABLE repositories ADD COLUMN IF NOT EXISTS last_indexed_at TEXT")
+        except Exception:
+            pass
         connection.commit()
         cursor.close()
 
@@ -35,9 +40,9 @@ class MetadataRepository:
             """
             INSERT INTO repositories (
                 id, name, github_url, status, progress, created_at,
-                files_scanned, functions_indexed, embeddings_generated, error
+                files_scanned, functions_indexed, embeddings_generated, error, last_indexed_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
                 name = EXCLUDED.name,
                 github_url = EXCLUDED.github_url,
@@ -47,7 +52,8 @@ class MetadataRepository:
                 files_scanned = EXCLUDED.files_scanned,
                 functions_indexed = EXCLUDED.functions_indexed,
                 embeddings_generated = EXCLUDED.embeddings_generated,
-                error = EXCLUDED.error
+                error = EXCLUDED.error,
+                last_indexed_at = COALESCE(EXCLUDED.last_indexed_at, repositories.last_indexed_at)
             """,
             (
                 repo_dict["id"],
@@ -59,7 +65,8 @@ class MetadataRepository:
                 repo_dict["files_scanned"],
                 repo_dict["functions_indexed"],
                 repo_dict["embeddings_generated"],
-                repo_dict["error"]
+                repo_dict["error"],
+                repo_dict.get("last_indexed_at")
             )
         )
         connection.commit()
@@ -95,7 +102,7 @@ class MetadataRepository:
             """
             SELECT 
                 id, name, github_url, status, progress, created_at,
-                files_scanned, functions_indexed, embeddings_generated, error
+                files_scanned, functions_indexed, embeddings_generated, error, last_indexed_at
             FROM repositories
             WHERE id = %s
             """,
@@ -117,7 +124,8 @@ class MetadataRepository:
             "files_scanned": row[6],
             "functions_indexed": row[7],
             "embeddings_generated": row[8],
-            "error": row[9]
+            "error": row[9],
+            "last_indexed_at": row[10]
         }
 
     def list_repositories(self) -> list[dict]:
@@ -129,7 +137,7 @@ class MetadataRepository:
             """
             SELECT 
                 id, name, github_url, status, progress, created_at,
-                files_scanned, functions_indexed, embeddings_generated, error
+                files_scanned, functions_indexed, embeddings_generated, error, last_indexed_at
             FROM repositories
             """
         )
@@ -148,7 +156,8 @@ class MetadataRepository:
                 "files_scanned": row[6],
                 "functions_indexed": row[7],
                 "embeddings_generated": row[8],
-                "error": row[9]
+                "error": row[9],
+                "last_indexed_at": row[10]
             })
             
         return repos
