@@ -11,23 +11,21 @@ from services.graph_builder import graph_builder
 from services.graph_service import graph_service
 from services.import_resolver import import_resolver
 from repositories.embedding_repository import embedding_repository
+from repositories.metadata_repository import metadata_repository
 from ingestion.scanner import scan_python_files
 
 
 class RepositoryService:
     def __init__(self):
-        self._repositories = []
         self._ingestion_threads = {}
-        self._repository_index = {}
         self._lock = Lock()
 
     def create_repository(self, github_url: str) -> dict:
         repo_name = github_url.rstrip("/").split("/")[-1].replace(".git", "")
 
-        with self._lock:
-            existing_repository = self._repository_index.get(repo_name)
-            if existing_repository:
-                return dict(existing_repository)
+        existing_repository = metadata_repository.get_repository(repo_name)
+        if existing_repository:
+            return existing_repository
 
         repository_record = {
             "id": repo_name,
@@ -42,37 +40,27 @@ class RepositoryService:
             "error": None,
         }
 
-        with self._lock:
-            self._repositories.append(repository_record)
-            self._repository_index[repo_name] = repository_record
+        metadata_repository.insert_repository(repository_record)
 
         thread = Thread(
             target=self._run_ingestion,
             args=(repo_name, github_url),
             daemon=True,
         )
-        self._ingestion_threads[repo_name] = thread
+        with self._lock:
+            self._ingestion_threads[repo_name] = thread
         thread.start()
 
-        return dict(repository_record)
+        return repository_record
 
     def list_repositories(self) -> list[dict]:
-        with self._lock:
-            return [dict(repository) for repository in self._repositories]
+        return metadata_repository.list_repositories()
 
     def get_repository(self, repository_id: str) -> dict | None:
-        with self._lock:
-            repository = self._repository_index.get(repository_id)
-        if not repository:
-            return None
-        return dict(repository)
+        return metadata_repository.get_repository(repository_id)
 
     def _update_repository(self, repository_id: str, **updates):
-        with self._lock:
-            repository = self._repository_index.get(repository_id)
-            if not repository:
-                return
-            repository.update(updates)
+        metadata_repository.update_repository(repository_id, updates)
 
     def _run_ingestion(self, repository_name: str, github_url: str):
         try:
@@ -92,7 +80,8 @@ class RepositoryService:
             )
             traceback.print_exc()
         finally:
-            self._ingestion_threads.pop(repository_name, None)
+            with self._lock:
+                self._ingestion_threads.pop(repository_name, None)
 
     def _ingest_repository(self, repository_name: str, repository_path: Path):
         neo4j_connection.connect()
