@@ -250,4 +250,18 @@ refactoring,
 
 and deep educational explanations are postponed until after MVP completion.
 
-####################################################    
+#################################################### 
+   
+## Source Code Modification Rules
+
+- Modify the actual project source files directly.
+- Never generate helper scripts such as:
+  - update.py
+  - cleanup.py
+  - migrate.py
+  - patch.py
+  - rewrite.py
+- Never rewrite files using Python string replacement scripts.
+- Never generate one-off repository transformation scripts unless explicitly requested.
+- If a source file needs to change, edit that source file directly.
+- Do not create temporary automation files for simple refactoring.
