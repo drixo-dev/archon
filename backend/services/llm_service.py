@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -56,6 +57,20 @@ class LLMService:
             )
 
         return answer
+
+
+
+    def extract_json(self, text: str) -> dict | list:
+        clean_text = text.strip()
+        if clean_text.startswith("```json"):
+            clean_text = clean_text[7:]
+        elif clean_text.startswith("```"):
+            clean_text = clean_text[3:]
+            
+        if clean_text.endswith("```"):
+            clean_text = clean_text[:-3]
+            
+        return json.loads(clean_text.strip())
 
 
 llm_service = LLMService()

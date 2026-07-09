@@ -1,4 +1,82 @@
+from app.config import settings
+
 class PromptBuilder:
+    OVERVIEW_QUESTION = "Explain the architecture, main components, and purpose of this repository."
+
+    OVERVIEW_SCHEMA = '''{
+  "repository_summary": {
+    "purpose": ["...", "..."],
+    "primary_users": ["...", "..."]
+  },
+  "technology_stack": {
+    "languages": ["..."],
+    "frameworks": ["..."],
+    "databases": ["..."],
+    "libraries": ["..."]
+  },
+  "architecture": {
+    "pattern": "...",
+    "style": "...",
+    "summary": ["...", "..."],
+    "high_level_flow": {
+      "diagram": "ASCII Diagram",
+      "steps": ["...", "..."]
+    },
+    "key_design_decisions": ["...", "..."]
+  },
+  "important_modules": [
+    {
+      "module": "...",
+      "purpose": "...",
+      "importance": "High | Medium | Low",
+      "why_it_matters": "...",
+      "recommended_to_read_after": "..."
+    }
+  ],
+  "entry_points": ["...", "..."],
+  "learning_path": [
+    {
+      "step": 1,
+      "title": "...",
+      "difficulty": "Easy | Medium | Hard",
+      "estimated_time": "15 min",
+      "files": ["...", "..."],
+      "why": "..."
+    }
+  ],
+  "suggested_questions": {
+    "understanding": ["..."],
+    "architecture": ["..."],
+    "navigation": ["..."],
+    "learning": ["..."],
+    "modification": ["..."]
+  },
+  "confidence": {
+    "level": "High | Medium | Low",
+    "reason": "...",
+    "evidence": {
+      "files_used": 0,
+      "functions_used": 0,
+      "graph_expansion": "1 hop",
+      "assumptions": 0
+    }
+  }
+}'''
+
+    CONFIDENCE_JSON_SCHEMA = '''```json
+{
+    "confidence": {
+        "level": "High | Medium | Low",
+        "reason": "...",
+        "evidence": {
+            "files_used": 0,
+            "functions_used": 0,
+            "graph_expansion": "1 hop",
+            "assumptions": 0
+        }
+    }
+}
+```'''
 
     def build_repository_chat_prompt(
         self,
@@ -28,8 +106,7 @@ Rules:
 - For Relevant Files, explicitly explain what each file does based on context (e.g., "router.py - Entry point for the API"). Do not just list the files.
 - The Code Walkthrough must trace the execution path function-by-function (e.g., `1. initialize() -> 2. process_data()`), noting the Purpose of each step. Do not restate the architecture here.
 - The Learn Next section must provide a sequential reading path of the retrieved files to guide a developer through reading the implementation (e.g., `api.py -> service.py -> models.py`).
-- At the end, provide a Confidence rating (High / Medium / Low) with a specific Reason based on the context provided. Never hallucinate confidence.
-- Finally, include a Context Used section with the exact provided retrieval metadata.
+- Do NOT hallucinate confidence. Use the retrieval statistics provided to determine your confidence level.
 
 Response format:
 
@@ -53,7 +130,7 @@ Response format:
 
 # Confidence
 
-# Context Used
+{self.CONFIDENCE_JSON_SCHEMA}
 
 Repository: {repository_name}
 
@@ -106,8 +183,8 @@ Source:
     def _truncate_source(
         self,
         source_code: str | None,
-        max_lines: int = 30,
-        max_characters: int = 1500
+        max_lines: int = settings.SOURCE_TRUNCATION_MAX_LINES,
+        max_characters: int = settings.SOURCE_TRUNCATION_MAX_CHARACTERS
     ) -> str:
         if not source_code:
             return ""
@@ -133,6 +210,9 @@ Source:
     ) -> str:
         context_text = self._format_repository_context(repository_context)
         
+        metadata = repository_context.get("metadata", {})
+        metadata_text = f"Files: {metadata.get('files', 0)}\nFunctions: {metadata.get('functions', 0)}\nGraph Expansion: {metadata.get('graph_expansion', '0 hops')}"
+        
         return f"""
 You are Archon, a premium AI Repository Intelligence Platform.
 
@@ -142,36 +222,21 @@ Your output must feel like a premium, automatically generated technical report.
 Your response MUST be valid JSON. Do not include markdown code blocks or any other text outside the JSON.
 
 Rules:
-- Write in concise bullets instead of long paragraphs.
-- Use ASCII diagrams where appropriate (e.g., in high_level_flow).
-- Provide beginner-friendly explanations that break down complex systems.
-- Use structured sections and maintain consistent terminology.
+- Write in concise bullet arrays instead of long string paragraphs. The frontend will render bullets.
+- In `architecture.high_level_flow`, provide an ASCII diagram and a step-by-step list of the execution flow based on retrieved evidence.
+- Important Modules should explain the purpose, importance level, and why it matters.
+- Learning Path must estimate time based on complexity and explicitly guide the user through files.
+- Suggested Questions must be repository-specific and categorized. Avoid generic questions.
+- Provide a Confidence metadata block at the end, using the provided retrieval metadata. Do NOT hallucinate confidence.
 - Base all insights strictly on evidence from the repository. Do NOT invent information or hallucinate.
 
 Required JSON Schema:
-{{
-  "repository_summary": {{
-    "purpose": "",
-    "primary_users": "",
-    "architecture_style": ""
-  }},
-  "technology_stack": {{
-    "languages": [],
-    "frameworks": [],
-    "databases": [],
-    "libraries": []
-  }},
-  "architecture": {{
-    "description": "",
-    "high_level_flow": ""
-  }},
-  "important_modules": [],
-  "entry_points": [],
-  "learning_path": [],
-  "suggested_questions": []
-}}
+{self.OVERVIEW_SCHEMA}
 
 Repository: {repository_name}
+
+Retrieval Metadata:
+{metadata_text}
 
 Repository Context:
 {context_text}

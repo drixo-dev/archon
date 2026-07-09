@@ -1,3 +1,4 @@
+from app.config import settings
 import json
 
 from services.context_builder import context_builder
@@ -13,16 +14,16 @@ class OverviewService:
         if not repository:
             return None
 
-        question = "Explain the architecture, main components, and purpose of this repository."
+        question = prompt_builder.OVERVIEW_QUESTION
         
         context = context_builder.build_context(
             question=question,
             repository_id=repository_id,
-            retrieval_limit=10,
-            same_file_limit=2,
-            dependency_limit=2,
-            call_neighbor_limit=2,
-            max_total_functions=20
+            retrieval_limit=settings.OVERVIEW_RETRIEVAL_LIMIT,
+            same_file_limit=settings.OVERVIEW_SAME_FILE_LIMIT,
+            dependency_limit=settings.OVERVIEW_DEPENDENCY_LIMIT,
+            call_neighbor_limit=settings.OVERVIEW_CALL_NEIGHBOR_LIMIT,
+            max_total_functions=settings.OVERVIEW_MAX_TOTAL_FUNCTIONS
         )
 
         prompt = prompt_builder.build_repository_overview_prompt(
@@ -32,14 +33,7 @@ class OverviewService:
 
         try:
             answer = llm_service.generate_answer(prompt)
-            clean_answer = answer.strip()
-            if clean_answer.startswith("```json"):
-                clean_answer = clean_answer[7:]
-            if clean_answer.endswith("```"):
-                clean_answer = clean_answer[:-3]
-            
-            clean_answer = clean_answer.strip()
-            return json.loads(clean_answer)
+            return llm_service.extract_json(answer)
         except json.JSONDecodeError:
             return {"error": "Failed to parse overview JSON", "raw_response": answer}
         except Exception as error:

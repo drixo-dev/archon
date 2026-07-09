@@ -5,7 +5,7 @@ from app.db.postgres import (
 
 class EmbeddingRepository:
 
-    def _ensure_schema(self):
+    def initialize_schema(self):
         connection = postgres_connection.get_connection()
         if not connection:
             return
@@ -40,7 +40,6 @@ class EmbeddingRepository:
         repository_id: str | None = None
     ):
 
-        self._ensure_schema()
 
         connection = (
             postgres_connection.get_connection()
@@ -120,7 +119,6 @@ class EmbeddingRepository:
             postgres_connection.get_connection()
         )
 
-        self._ensure_schema()
 
         cursor = connection.cursor()
 

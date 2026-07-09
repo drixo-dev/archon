@@ -1,3 +1,5 @@
+from repositories.metadata_repository import metadata_repository
+from repositories.embedding_repository import embedding_repository
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -12,6 +14,10 @@ from app.db.postgres import postgres_connection
 async def lifespan(app: FastAPI):
     postgres_connection.connect()
     neo4j_connection.connect()
+    
+    # Initialize schemas exactly once
+    metadata_repository.initialize_schema()
+    embedding_repository.initialize_schema()
     try:
         yield
     finally:

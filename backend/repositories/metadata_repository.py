@@ -1,7 +1,7 @@
 from app.db.postgres import postgres_connection
 
 class MetadataRepository:
-    def _ensure_schema(self):
+    def initialize_schema(self):
         connection = postgres_connection.get_connection()
         if not connection:
             return
@@ -32,7 +32,6 @@ class MetadataRepository:
         cursor.close()
 
     def insert_repository(self, repo_dict: dict):
-        self._ensure_schema()
         connection = postgres_connection.get_connection()
         cursor = connection.cursor()
         
@@ -73,7 +72,6 @@ class MetadataRepository:
         cursor.close()
 
     def update_repository(self, repository_id: str, updates: dict):
-        self._ensure_schema()
         connection = postgres_connection.get_connection()
         cursor = connection.cursor()
         
@@ -94,7 +92,6 @@ class MetadataRepository:
         cursor.close()
 
     def get_repository(self, repository_id: str) -> dict | None:
-        self._ensure_schema()
         connection = postgres_connection.get_connection()
         cursor = connection.cursor()
         
@@ -129,7 +126,6 @@ class MetadataRepository:
         }
 
     def list_repositories(self) -> list[dict]:
-        self._ensure_schema()
         connection = postgres_connection.get_connection()
         cursor = connection.cursor()
         

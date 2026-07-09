@@ -1,3 +1,4 @@
+from app.config import settings
 from repositories.embedding_repository import embedding_repository
 from services.embedding_service import embedding_service
 from services.graph_service import graph_service
@@ -7,11 +8,11 @@ class ContextBuilder:
     def build_context(
         self,
         question: str,
-        retrieval_limit: int = 30,
-        same_file_limit: int = 3,
-        dependency_limit: int = 3,
-        call_neighbor_limit: int = 4,
-        max_total_functions: int = 12,
+        retrieval_limit: int = settings.CONTEXT_RETRIEVAL_LIMIT,
+        same_file_limit: int = settings.CONTEXT_SAME_FILE_LIMIT,
+        dependency_limit: int = settings.CONTEXT_DEPENDENCY_LIMIT,
+        call_neighbor_limit: int = settings.CONTEXT_CALL_NEIGHBOR_LIMIT,
+        max_total_functions: int = settings.CONTEXT_MAX_TOTAL_FUNCTIONS,
         repository_id: str | None = None
     ):
         query_embedding = embedding_service.generate_embedding(question)
@@ -39,7 +40,7 @@ class ContextBuilder:
         question: str,
         retrieved_functions: list[dict],
         repository_id: str | None = None,
-        same_file_limit: int = 3
+        same_file_limit: int = settings.CONTEXT_SAME_FILE_LIMIT
     ):
         # 1. Group by source file
         candidate_files = {}
