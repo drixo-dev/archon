@@ -56,3 +56,6 @@ class LLMService:
             )
 
         return answer
+
+
+llm_service = LLMService()

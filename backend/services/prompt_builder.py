@@ -4,48 +4,55 @@ class PromptBuilder:
         self,
         question: str,
         repository_context: dict,
-        repository_name: str = "Unknown Repository"
+        repository_name: str = "Unknown Repository",
+        response_mode: str = "concise"
     ) -> str:
         context_text = self._format_repository_context(
             repository_context
         )
-        wants_detailed_answer = self._wants_detailed_answer(question)
-        answer_style = (
-            "Provide a concise answer (about 5-10 bullet points or a short paragraph). "
-            "Keep it focused on the most relevant implementation path only."
-        )
-        if wants_detailed_answer:
-            answer_style = (
-                "Provide a detailed technical answer with step-by-step explanation and "
-                "important implementation details."
-            )
 
         return f"""
-You are an AI software architect.
+You are Archon.
 
-Answer the user's question using only the supplied repository context.
+Purpose:
+Help developers understand unfamiliar repositories.
 
-If the repository context is not enough to answer confidently, say that the
-context is insufficient and explain what is missing.
+Rules:
+- Never invent implementation details.
+- Use only repository evidence.
+- Prefer bullet points.
+- Prefer numbered steps.
+- Prefer tables.
+- Prefer ASCII diagrams.
+- Avoid large paragraphs.
+- Mention only relevant functions.
+- Mention missing context when necessary.
 
-Do not invent files, functions, or behavior that are not present in the
-repository context.
+Response format:
 
-{answer_style}
+# TL;DR
 
-Do not explain every retrieved function by default. Mention only functions
-that directly answer the question.
+# High-Level Flow
 
-Repository:
+# Step-by-Step
 
-{repository_name}
+# Important Files
 
-Question:
+# Important Functions
 
-{question}
+# Concepts Used
+
+# Summary
+
+# Learn Next
+
+Repository: {repository_name}
+
+Question: {question}
+
+Response Mode: {response_mode}
 
 Repository Context:
-
 {context_text}
 
 Answer:
@@ -149,17 +156,55 @@ Source:
 
         return truncated_source
 
-    def _wants_detailed_answer(self, question: str) -> bool:
-        lowered = question.lower()
-        detail_markers = [
-            "in detail",
-            "deep dive",
-            "step by step",
-            "thoroughly",
-            "explain in depth",
-            "detailed",
-        ]
-        return any(marker in lowered for marker in detail_markers)
+
+
+    def build_repository_overview_prompt(
+        self,
+        repository_name: str,
+        repository_context: dict
+    ) -> str:
+        context_text = self._format_repository_context(repository_context)
+        
+        return f"""
+Generate a Repository Intelligence Report.
+
+Your response MUST be valid JSON. Do not include markdown code blocks or any other text outside the JSON.
+
+Explicit requirements:
+- concise descriptions
+- no essays
+- ASCII architecture flow
+- beginner-friendly learning order
+- suggested questions based on the repository
+
+Required JSON Schema:
+{{
+  "repository_summary": {{
+    "purpose": "",
+    "primary_users": "",
+    "architecture_style": ""
+  }},
+  "technology_stack": {{
+    "languages": [],
+    "frameworks": [],
+    "databases": [],
+    "libraries": []
+  }},
+  "architecture": {{
+    "description": "",
+    "high_level_flow": ""
+  }},
+  "important_modules": [],
+  "entry_points": [],
+  "learning_path": [],
+  "suggested_questions": []
+}}
+
+Repository: {repository_name}
+
+Repository Context:
+{context_text}
+""".strip()
 
 
 prompt_builder = PromptBuilder()
