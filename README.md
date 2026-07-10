@@ -1,76 +1,221 @@
+<div align="center">
+
 # Archon
 
-Archon is an AI-powered Repository Architecture Intelligence Platform designed to analyze source code repositories, construct semantic knowledge graphs, and enable intelligent architecture-aware reasoning over codebases.
+### Understand Any Codebase in Minutes
 
-The system combines:
+**An AI Repository Intelligence Platform that helps developers understand, learn, navigate, and safely modify unfamiliar codebases.**
 
-* static code analysis
-* AST parsing
-* graph databases
-* semantic extraction
-* vector retrieval (planned)
-* LLM-powered reasoning (planned)
-
-to transform repositories into machine-understandable architectural knowledge.
-
----
-
-# Vision
-
-Modern repositories contain rich architectural relationships that are difficult to understand manually.
-
-Archon aims to provide:
-
-* repository knowledge graphs
-* dependency analysis
-* behavioral call graphs
-* semantic code retrieval
-* architecture-aware AI reasoning
-* impact analysis
-* intelligent repository exploration
+<p>
+  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Neo4j-Knowledge%20Graph-008CC1?logo=neo4j"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-pgvector-336791?logo=postgresql"/>
+  <img src="https://img.shields.io/badge/Gemini-AI-4285F4"/>
+  <img src="https://img.shields.io/badge/Status-Active-success"/>
+</p>
 
 ---
 
-# Current Architecture
+**Paste a GitHub repository.**
 
-```text
-GitHub Repository
-        ↓
-Repository Cloning
-        ↓
-Filesystem Scanning
-        ↓
-Python AST Parsing
-        ↓
-Semantic Extraction
-        ↓
-Graph Builder
-        ↓
-Neo4j Knowledge Graph
+Archon automatically analyzes the codebase, builds a knowledge graph, creates semantic embeddings, and lets you explore the repository through AI-powered architectural understanding.
+
+</div>
+
+---
+
+# Why Archon?
+
+Understanding a new repository is hard.
+
+Most developers begin with:
+
+- reading README
+- opening random files
+- searching symbols
+- tracing function calls
+- asking ChatGPT
+
+This is slow.
+
+Archon builds an **intelligence layer** over a repository before you even ask questions.
+
+Instead of searching code,
+
+you explore **knowledge**.
+
+---
+
+# What can Archon do?
+
+## Repository Overview
+
+Generate an intelligent report describing
+
+- Repository purpose
+- Architecture style
+- Technology stack
+- Important modules
+- Entry points
+- Learning path
+- Suggested questions
+
+---
+
+## Repository Chat
+
+Ask questions like
+
+> How does authentication work?
+
+> Where should I start reading?
+
+> How are CLI arguments converted into Python types?
+
+Archon retrieves relevant code, expands graph context, and generates evidence-based answers.
+
+---
+
+## Folder Intelligence
+
+Understand every folder inside the project.
+
+For each folder Archon explains
+
+- Purpose
+- Responsibilities
+- Important files
+- Reading priority
+- Difficulty
+- Why you should read it
+
+---
+
+## Repository Statistics
+
+Automatically calculate
+
+- Files
+- Functions
+- Imports
+- Internal dependencies
+- Call relationships
+- Graph size
+- Embedding coverage
+
+---
+
+## Knowledge Graph
+
+Builds a Neo4j graph representing
+
 ```
-
-Current graph layers:
-
-```text
 Repository
-    ↓ CONTAINS
-File
-    ↓ DEFINES
-Function
+      │
+      ├──────── Files
+      │
+      ├──────── Functions
+      │
+      ├──────── Imports
+      │
+      └──────── Call Relationships
 ```
 
-Upcoming graph layers:
+This graph powers retrieval and architectural reasoning.
 
-```text
-File
-    ↓ IMPORTS
-Import/File
+---
+
+# Current Product
+
+## ✅ Implemented
+
+### Repository Analysis
+
+- GitHub Repository Ingestion
+- Python AST Parsing
+- Function Extraction
+- Import Resolution
+- Internal Dependency Graph
+- Function Call Graph
+
+### AI Intelligence
+
+- Repository Overview
+- Repository Chat
+- Folder Overview
+- Repository Statistics
+
+### Retrieval
+
+- Semantic Embeddings
+- pgvector Search
+- Context Expansion
+- Hybrid Retrieval Pipeline
+
+### Infrastructure
+
+- FastAPI Backend
+- Neo4j Knowledge Graph
+- PostgreSQL + pgvector
+- Docker Compose
+
+---
+
+## 🚧 In Progress
+
+- Frontend Dashboard
+- Architecture Explorer
+- Learning Mode
+- Interactive Dependency Graph
+
+---
+
+## 🔮 Planned
+
+- Modification Planning
+- Impact Analysis
+- Multi-language Support
+- Agentic Investigation Mode
+
+---
+
+# Architecture
+
 ```
-
-```text
-Function
-    ↓ CALLS
-Function
+                 GitHub Repository
+                         │
+                         ▼
+                Repository Ingestion
+                         │
+          ┌──────────────┴──────────────┐
+          ▼                             ▼
+     Python Parser              Repository Metadata
+          │
+          ▼
+  AST Extraction
+          │
+          ├─────────────── Functions
+          │
+          ├─────────────── Imports
+          │
+          ├─────────────── Dependencies
+          │
+          └─────────────── Call Graph
+                         │
+          ┌──────────────┴──────────────┐
+          ▼                             ▼
+   Neo4j Knowledge Graph         PostgreSQL + pgvector
+          │                             │
+          └──────────────┬──────────────┘
+                         ▼
+                 Context Builder
+                         ▼
+                 Prompt Builder
+                         ▼
+                    Gemini LLM
+                         ▼
+              Repository Intelligence
 ```
 
 ---
@@ -79,170 +224,248 @@ Function
 
 ## Backend
 
-* FastAPI
-* Python
+- Python
+- FastAPI
+
+## AI
+
+- Google Gemini
+- Sentence Transformers
 
 ## Databases
 
-* PostgreSQL
-* Neo4j
+- PostgreSQL
+- pgvector
+- Neo4j
 
 ## Infrastructure
 
-* Docker
-* Docker Compose
+- Docker
+- Docker Compose
 
-## Static Analysis
+## Frontend *(In Progress)*
 
-* Python AST
-
-## Planned
-
-* pgvector
-* sentence-transformers
-* hybrid retrieval
-* LLM orchestration
+- Next.js
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Framer Motion
+- React Flow
 
 ---
 
-# Current Features
+# Example Workflow
 
-* GitHub repository cloning
-* Recursive repository scanning
-* Python AST parsing
-* Import extraction
-* Function extraction
-* Function call extraction
-* Semantic structure generation
-* Neo4j graph ingestion
-* Repository knowledge graph generation
-* Repository-agnostic ingestion pipeline
+```
+Paste GitHub URL
 
----
+        │
 
-# Repository Ingestion Pipeline
+        ▼
 
-Archon currently supports automated repository ingestion:
+Repository Indexed
 
-```text
-GitHub URL
-    ↓
-Clone Repository
-    ↓
-Scan Python Files
-    ↓
-Extract AST Semantics
-    ↓
-Build Graph Relationships
-    ↓
-Store in Neo4j
+        │
+
+        ▼
+
+Knowledge Graph Created
+
+        │
+
+        ▼
+
+Embeddings Generated
+
+        │
+
+        ▼
+
+Ask Questions
+
+        │
+
+        ▼
+
+Repository Intelligence
 ```
 
 ---
 
-# Knowledge Graph Model
+# API
 
-## Nodes
+## Repository
 
-### Repository
-
-Represents a source code repository.
-
-### File
-
-Represents a Python source file.
-
-### Function
-
-Represents a function definition extracted from AST parsing.
-
----
-
-## Relationships
-
-### CONTAINS
-
-```text
-Repository → File
+```
+POST /repositories
+GET  /repositories
+GET  /repositories/{id}
 ```
 
-Represents repository ownership.
+## Repository Intelligence
 
-### DEFINES
+```
+GET /repositories/{id}/overview
 
-```text
-File → Function
+GET /repositories/{id}/folders
+
+GET /repositories/{id}/statistics
 ```
 
-Represents function ownership within a file.
+## AI
+
+```
+POST /chat
+```
+
+Interactive Swagger documentation
+
+```
+http://localhost:8000/docs
+```
 
 ---
 
 # Project Structure
 
-```text
+```
 backend/
-├── app/
-├── ingestion/
-├── parser/
-├── services/
-├── scripts/
-├── models/
+
+├── api/                FastAPI routes
+├── app/                Configuration
+├── ingestion/          Repository cloning
+├── parser/             Python AST parsing
+├── repositories/       Database layer
+├── services/           Business logic
+├── models/             API models
+
+docs/
+
+├── architecture/
+├── eng-notes/
+└── roadmap/
+
+infrastructure/
+
+docker-compose.yml
 ```
 
 ---
 
-# Local Setup
+# Getting Started
 
-## Start Services
+## Clone
+
+```bash
+git clone https://github.com/drixo-dev/archon.git
+
+cd archon
+```
+
+## Configure
+
+Create
+
+```
+backend/.env
+```
+
+Example
+
+```env
+GEMINI_API_KEY=YOUR_KEY
+
+POSTGRES_PASSWORD=password
+
+NEO4J_PASSWORD=password
+```
+
+## Run
 
 ```bash
 docker compose up --build
 ```
 
-## Run Neo4j
+---
 
-Neo4j Browser:
+Open
+
+Swagger
+
+```
+http://localhost:8000/docs
+```
+
+Neo4j Browser
+
+```
 http://localhost:7474
-
-## Run Ingestion Pipeline
-
-```bash
-python -m scripts.test_ingestion_pipeline
 ```
 
 ---
 
 # Roadmap
 
-## Phase 1
+## Backend
 
-* Dockerized backend environment
-* AST parsing
-* Repository ingestion
+- [x] Repository ingestion
+- [x] AST parser
+- [x] Knowledge graph
+- [x] Semantic retrieval
+- [x] Repository overview
+- [x] Folder overview
+- [x] Repository statistics
+- [x] AI repository chat
 
-## Phase 2
+## Frontend
 
-* Neo4j knowledge graph construction
-* Dependency graph generation
-* Call graph generation
+- [ ] Repository Dashboard
+- [ ] Architecture Explorer
+- [ ] Folder Explorer
+- [ ] Interactive Graph
+- [ ] Learning Path
 
-## Phase 3
+## Future
 
-* Embeddings + pgvector
+- [ ] Modification Planning
+- [ ] Impact Analysis
+- [ ] Agentic Investigation
+- [ ] Multi-language Support
 
-## Phase 4
+---
 
-* Hybrid retrieval
+# Project Philosophy
 
-## Phase 5
+Archon is **not** another AI chat interface.
 
-* LLM context assembly
+It is an **AI Repository Intelligence Platform**.
 
-## Phase 6
+The goal is simple:
 
-* AI architecture reasoning agent
+> Help developers understand unfamiliar codebases through architecture, knowledge graphs, semantic retrieval, and AI.
 
-## Phase 7
+---
 
-* Frontend + deployment
+# Contributing
+
+Contributions are welcome.
+
+Please open an issue before large architectural changes.
+
+For implementation work, follow the architecture documents inside `docs/architecture`.
+
+---
+
+# License
+
+MIT License *(planned)*
+
+---
+
+<div align="center">
+
+### Built to make understanding codebases as easy as reading documentation.
+
+⭐ If you like the project, consider giving it a star.
+
+</div>
