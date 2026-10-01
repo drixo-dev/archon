@@ -86,17 +86,20 @@ class GraphBuilder:
                 callee_qualified_name = (
                     import_resolver.resolve_function(
                         function_name=call_data["callee"],
-                        function_index=function_index
+                        function_index=function_index,
+                        current_file=relative_path,
+                        imports=structure["imports"],
+                        module_index=module_index
                     )
                 )
 
-                # Only create relationship if callee
-                # resolves to repository function
                 if callee_qualified_name:
-
+                    print(f"Creating CALL: {caller_qualified_name} -> {callee_qualified_name}")
                     graph_service.create_function_call_relationship(
                         caller_qualified_name=caller_qualified_name,
                         callee_qualified_name=callee_qualified_name
                     )
+                else:
+                    print(f"Failed to resolve: {call_data['callee']}")
 
 graph_builder = GraphBuilder()

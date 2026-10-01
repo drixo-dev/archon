@@ -21,7 +21,11 @@ class RepositoryService:
         self._lock = Lock()
 
     def create_repository(self, github_url: str) -> dict:
-        repo_name = github_url.rstrip("/").split("/")[-1].replace(".git", "")
+        clean_url = github_url.rstrip("/").replace(".git", "")
+        if "github.com/" in clean_url:
+            repo_name = clean_url.split("github.com/")[-1].replace("/", "_")
+        else:
+            repo_name = clean_url.split("/")[-1]
 
         existing_repository = metadata_repository.get_repository(repo_name)
         if existing_repository:
@@ -70,7 +74,7 @@ class RepositoryService:
                 progress=5,
                 error=None,
             )
-            repository_path = clone_repository(github_url)
+            repository_path = clone_repository(github_url, repository_name)
             self._ingest_repository(repository_name, repository_path)
         except Exception as exc:
             self._update_repository(
@@ -172,6 +176,29 @@ class RepositoryService:
             )
             print(f"Repository ingestion failed: {exc}")
             raise
+
+    def delete_repository(self, repository_id: str) -> bool:
+        existing = metadata_repository.get_repository(repository_id)
+        if not existing:
+            return False
+            
+        # Delete from Neo4j
+        graph_service.delete_repository_graph(repository_id)
+        
+        # Delete from Vector DB
+        embedding_repository.delete_embeddings_by_repository(repository_id)
+        
+        # Delete from Postgres metadata
+        metadata_repository.delete_repository(repository_id)
+        
+        # Delete local clone
+        import shutil
+        from ingestion.github_loader import REPOSITORIES_DIR
+        local_path = REPOSITORIES_DIR / repository_id
+        if local_path.exists():
+            shutil.rmtree(local_path)
+            
+        return True
 
 
 repository_service = RepositoryService()

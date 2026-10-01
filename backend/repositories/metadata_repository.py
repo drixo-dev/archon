@@ -1,3 +1,4 @@
+
 from app.db.postgres import postgres_connection
 
 class MetadataRepository:
@@ -157,5 +158,12 @@ class MetadataRepository:
             })
             
         return repos
+
+    def delete_repository(self, repository_id: str):
+        connection = postgres_connection.get_connection()
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM repositories WHERE id = %s", (repository_id,))
+        connection.commit()
+        cursor.close()
 
 metadata_repository = MetadataRepository()

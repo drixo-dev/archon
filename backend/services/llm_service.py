@@ -18,20 +18,19 @@ class LLMService:
             "gemini-2.5-flash"
         )
 
-        if not self.api_key:
-            raise ValueError(
-                "GEMINI_API_KEY environment variable is not set"
-            )
-
-        self.client = genai.Client(
-            api_key=self.api_key
-        )
+        if self.api_key:
+            self.client = genai.Client(api_key=self.api_key)
+        else:
+            self.client = None
 
     def generate_answer(
         self,
         prompt: str
     ) -> str:
 
+        if not self.client:
+            raise ValueError("GEMINI_API_KEY environment variable is not set")
+            
         try:
             response = (
                 self.client.models.generate_content(

@@ -53,63 +53,67 @@ def extract_imports(tree):
     return imports
 
 
-def extract_functions(tree, source_code):
-    """
-    Extract functions with source code.
-    """
+class StructureVisitor(ast.NodeVisitor):
+    def __init__(self, source_code):
+        self.source_code = source_code
+        self.scope_stack = []
+        self.functions = []
+        self.calls = []
 
-    functions = []
+    def visit_FunctionDef(self, node):
+        self._visit_func(node)
 
-    for node in ast.walk(tree):
+    def visit_AsyncFunctionDef(self, node):
+        self._visit_func(node)
 
-        if isinstance(node, ast.FunctionDef):
+    def _visit_func(self, node):
+        name = node.name
+        qualified_name = ".".join(self.scope_stack + [name])
+        
+        function_source = ast.get_source_segment(self.source_code, node) if self.source_code else ""
+        
+        self.functions.append({
+            "name": qualified_name,
+            "source": function_source
+        })
+        
+        self.scope_stack.append(name)
+        self.generic_visit(node)
+        self.scope_stack.pop()
 
-            function_source = ast.get_source_segment(
-                source_code,
-                node
-            )
+    def visit_ClassDef(self, node):
+        self.scope_stack.append(node.name)
+        self.generic_visit(node)
+        self.scope_stack.pop()
 
-            functions.append({
-                "name": node.name,
-                "source": function_source
+    def visit_Call(self, node):
+        caller = ".".join(self.scope_stack) if self.scope_stack else "<module>"
+        callee = None
+        
+        if isinstance(node.func, ast.Name):
+            callee = node.func.id
+        elif isinstance(node.func, ast.Attribute):
+            callee = node.func.attr
+            
+        if callee:
+            self.calls.append({
+                "caller": caller,
+                "callee": callee
             })
+            
+        self.generic_visit(node)
 
-    return functions
+
+def extract_functions(tree, source_code):
+    visitor = StructureVisitor(source_code)
+    visitor.visit(tree)
+    return visitor.functions
 
 
 def extract_function_calls(tree):
-    """
-    Extract caller -> callee relationships.
-    """
-
-    calls = []
-
-    for node in ast.walk(tree):
-
-        if isinstance(node, ast.FunctionDef):
-
-            caller = node.name
-
-            for child in ast.walk(node):
-
-                if isinstance(child, ast.Call):
-
-                    callee = None
-
-                    if isinstance(child.func, ast.Name):
-                        callee = child.func.id
-
-                    elif isinstance(child.func, ast.Attribute):
-                        callee = child.func.attr
-
-                    if callee:
-
-                        calls.append({
-                            "caller": caller,
-                            "callee": callee
-                        })
-
-    return calls
+    visitor = StructureVisitor("")
+    visitor.visit(tree)
+    return visitor.calls
 
 
 def extract_file_structure(file_path: Path):
@@ -117,13 +121,14 @@ def extract_file_structure(file_path: Path):
     Extract complete semantic structure from Python file.
     """
 
-    tree, source_code = parse_python_file(
-    file_path
-    )
+    tree, source_code = parse_python_file(file_path)
+    
+    visitor = StructureVisitor(source_code)
+    visitor.visit(tree)
 
     return {
         "file": str(file_path),
         "imports": extract_imports(tree),
-        "functions": extract_functions(tree,source_code),
-        "calls": extract_function_calls(tree),
+        "functions": visitor.functions,
+        "calls": visitor.calls,
     }

@@ -6,12 +6,10 @@ from git import Repo
 REPOSITORIES_DIR = Path("/app/datasets/repositories")
 
 
-def clone_repository(repo_url: str) -> Path:
+def clone_repository(repo_url: str, repo_name: str) -> Path:
     """
     Clone repository into local datasets directory.
     """
-
-    repo_name = repo_url.split("/")[-1].replace(".git", "")
 
     local_path = REPOSITORIES_DIR / repo_name
 

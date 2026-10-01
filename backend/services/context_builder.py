@@ -82,7 +82,11 @@ class ContextBuilder:
         # 3. Expand to related files/functions using Neo4j
         feature_files = []
         for f in top_files:
-            file_funcs = graph_service.get_functions_by_file(f["file_path"], limit=max(5, same_file_limit))
+            file_funcs = graph_service.get_functions_by_file(
+                file_path=f["file_path"],
+                repository_name=repository_id,
+                limit=max(5, same_file_limit)
+            )
             seen = {fn["qualified_name"] for fn in f["functions"]}
             merged_funcs = list(f["functions"])
             for fn in file_funcs:

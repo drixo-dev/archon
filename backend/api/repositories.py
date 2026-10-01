@@ -58,3 +58,11 @@ def get_repository_guide(repository_id: str):
     if not guide:
         raise HTTPException(status_code=404, detail="Repository not found")
     return guide
+
+
+@router.delete("/repositories/{repository_id}")
+def delete_repository(repository_id: str):
+    success = repository_service.delete_repository(repository_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    return {"message": f"Repository {repository_id} successfully deleted"}

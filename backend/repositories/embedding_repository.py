@@ -165,6 +165,14 @@ class EmbeddingRepository:
 
         return results
 
+    def delete_embeddings_by_repository(self, repository_id: str):
+        connection = postgres_connection.get_connection()
+        if not connection:
+            return
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM function_embeddings WHERE repository_id = %s", (repository_id,))
+        connection.commit()
+        cursor.close()
 
 embedding_repository = (
     EmbeddingRepository()

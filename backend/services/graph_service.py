@@ -27,9 +27,8 @@ class GraphService:
         query = """
         MERGE (r:Repository {name: $repository_name})
 
-        MERGE (f:File {path: $file_path})
+        MERGE (f:File {path: $file_path, repository_name: $repository_name})
         SET f.language = $language
-        SET f.repository_name = $repository_name
 
         MERGE (r)-[:CONTAINS]->(f)
 
@@ -56,16 +55,16 @@ class GraphService:
         qualified_name = f"{file_path}:{function_name}"
 
         query = """
-        MERGE (f:File {path: $file_path})
+        MERGE (f:File {path: $file_path, repository_name: $repository_name})
 
         MERGE (func:Function {
-            qualified_name: $qualified_name
+            qualified_name: $qualified_name,
+            repository_name: $repository_name
         })
 
         SET func.name = $function_name
         SET func.file_path = $file_path
         SET func.source_code = $source_code
-        SET func.repository_name = $repository_name
 
         MERGE (f)-[:DEFINES]->(func)
 
@@ -292,10 +291,11 @@ class GraphService:
     def get_functions_by_file(
         self,
         file_path: str,
+        repository_name: str,
         limit: int = 10
     ):
         query = """
-        MATCH (file:File {path: $file_path})
+        MATCH (file:File {path: $file_path, repository_name: $repository_name})
             -[:DEFINES]->(function:Function)
         WHERE function.source_code IS NOT NULL
 
@@ -311,6 +311,7 @@ class GraphService:
             results = session.run(
                 query,
                 file_path=file_path,
+                repository_name=repository_name,
                 limit=limit
             )
 
@@ -367,11 +368,12 @@ class GraphService:
     def get_dependency_functions(
         self,
         file_path: str,
+        repository_name: str,
         limit: int = 10
     ):
         query = """
-        MATCH (source:File {path: $file_path})
-            -[:DEPENDS_ON]->(target:File)
+        MATCH (source:File {path: $file_path, repository_name: $repository_name})
+            -[:DEPENDS_ON]->(target:File {repository_name: $repository_name})
             -[:DEFINES]->(function:Function)
         WHERE function.source_code IS NOT NULL
 
@@ -387,6 +389,7 @@ class GraphService:
             results = session.run(
                 query,
                 file_path=file_path,
+                repository_name=repository_name,
                 limit=limit
             )
 
@@ -433,5 +436,23 @@ class GraphService:
                 }
                 for record in results
             ]
+
+    def delete_repository_graph(self, repository_name: str):
+        query_file = """
+        MATCH (f:File {repository_name: $repository_name})
+        DETACH DELETE f
+        """
+        query_func = """
+        MATCH (func:Function {repository_name: $repository_name})
+        DETACH DELETE func
+        """
+        query_repo = """
+        MATCH (r:Repository {name: $repository_name})
+        DETACH DELETE r
+        """
+        with neo4j_connection.get_session() as session:
+            session.run(query_file, repository_name=repository_name)
+            session.run(query_func, repository_name=repository_name)
+            session.run(query_repo, repository_name=repository_name)
 
 graph_service = GraphService()
